@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "NotebookLM Folder Manager",
+  "version": "3.0.0",
+  "description": "Adds folder-based organization to the NotebookLM notebook list.",
+  "author": "NickGuAI",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://notebooklm.google.com/*"],
+      "css": ["style.css"],
+      "js": ["arrive.min.js", "content_script.js"]
+    }
+  ]
+}

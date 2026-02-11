@@ -1,0 +1,350 @@
+/* Sumi-e Design System - NotebookLM Organizer */
+
+/* --- Filter Bar --- */
+.category-filter-container {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(28, 28, 28, 0.06);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.category-filter-button {
+    padding: 8px 16px;
+    border: 1px solid rgba(28, 28, 28, 0.1);
+    border-radius: 2px 12px 2px 12px;
+    background-color: transparent;
+    color: #4A4A4A;
+    cursor: pointer;
+    font-size: 0.88em;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+    white-space: nowrap;
+}
+.category-filter-button:hover {
+    background-color: rgba(28, 28, 28, 0.03);
+    border-color: rgba(28, 28, 28, 0.2);
+}
+.category-filter-button.active {
+    background-color: #1C1C1C;
+    color: #FAF8F5;
+    border-color: #1C1C1C;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(28, 28, 28, 0.1);
+}
+
+project-button[data-filtered="hidden"],
+tr.mat-mdc-row[data-filtered="hidden"] {
+    display: none !important;
+}
+
+/* --- Filter Bar Actions (Add + Manage) --- */
+.filter-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+#quick-add-folder-btn {
+    padding: 7px 16px;
+    border: 1px solid rgba(28, 28, 28, 0.12);
+    border-radius: 2px 12px 2px 12px;
+    background-color: transparent;
+    color: #4A4A4A;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+    white-space: nowrap;
+}
+#quick-add-folder-btn:hover {
+    background-color: rgba(28, 28, 28, 0.04);
+    border-color: rgba(28, 28, 28, 0.25);
+    transform: translateY(-1px);
+}
+#quick-add-folder-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+#open-category-manager-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+}
+#open-category-manager-btn:hover {
+    background-color: rgba(28, 28, 28, 0.04);
+}
+#open-category-manager-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: #8B8B8B;
+    stroke-width: 1.5;
+}
+
+/* --- Folder Manager Modal --- */
+.category-manager-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center,
+        rgba(28, 28, 28, 0.4) 0%,
+        rgba(28, 28, 28, 0.6) 100%);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.category-manager-modal {
+    background-color: #FAF8F5;
+    padding: 28px 32px;
+    border-radius: 4px 24px 4px 24px;
+    box-shadow:
+        0 2px 4px rgba(28, 28, 28, 0.02),
+        0 16px 48px rgba(28, 28, 28, 0.08);
+    width: 90%;
+    max-width: 440px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+.category-manager-modal h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    color: #1C1C1C;
+    font-size: 1.4em;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid rgba(28, 28, 28, 0.06);
+    padding-bottom: 16px;
+}
+
+#category-list-container {
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.folder-entry {
+    display: grid;
+    grid-template-columns: 1fr 36px;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.folder-entry input {
+    width: 100%;
+    padding: 12px 0;
+    border: none;
+    border-bottom: 1px solid rgba(28, 28, 28, 0.12);
+    border-radius: 0;
+    background: transparent;
+    font-size: 1em;
+    color: #1C1C1C;
+    transition: border-color 0.3s ease;
+}
+.folder-entry input:focus {
+    outline: none;
+    border-bottom-color: #1C1C1C;
+}
+.folder-entry input::placeholder {
+    color: #C4C4C4;
+}
+
+.folder-entry .delete-folder-btn {
+    background-color: transparent;
+    color: #C23B22;
+    border: 1px solid rgba(194, 59, 34, 0.15);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.folder-entry .delete-folder-btn:hover {
+    background-color: rgba(194, 59, 34, 0.06);
+    border-color: rgba(194, 59, 34, 0.3);
+}
+
+.folder-entry label {
+    display: block;
+    font-size: 0.75em;
+    color: #8B8B8B;
+    margin-bottom: 2px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* --- Modal Actions --- */
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid rgba(28, 28, 28, 0.06);
+    padding-top: 20px;
+}
+
+.modal-actions button {
+    padding: 12px 24px;
+    border-radius: 2px 12px 2px 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+#add-new-category-btn {
+    background-color: transparent;
+    color: #4A4A4A;
+    border: 1px solid rgba(28, 28, 28, 0.12);
+}
+#add-new-category-btn:hover {
+    background-color: rgba(28, 28, 28, 0.03);
+    border-color: rgba(28, 28, 28, 0.2);
+}
+
+#save-categories-btn {
+    background-color: #1C1C1C;
+    color: #FAF8F5;
+}
+#save-categories-btn:hover {
+    background-color: #4A4A4A;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(28, 28, 28, 0.08);
+}
+
+#cancel-categories-btn {
+    background-color: transparent;
+    color: #8B8B8B;
+    border: 1px solid rgba(28, 28, 28, 0.08);
+}
+#cancel-categories-btn:hover {
+    background-color: rgba(28, 28, 28, 0.02);
+    color: #4A4A4A;
+}
+
+/* --- Folder Column Header (Table View) --- */
+.folder-col-header {
+    font-size: 0.75em;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8B8B8B;
+    padding: 12px 16px;
+    white-space: nowrap;
+}
+
+/* --- Folder Column Cell (Table View) --- */
+.folder-col-cell {
+    padding: 8px 16px;
+    vertical-align: middle;
+}
+
+/* --- Folder Assign Button (shared for card + table) --- */
+.folder-assign-btn {
+    background: transparent;
+    border: 1px solid rgba(28, 28, 28, 0.08);
+    border-radius: 2px 10px 2px 10px;
+    padding: 6px 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85em;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    color: #8B8B8B;
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.folder-assign-btn:hover {
+    background: rgba(28, 28, 28, 0.05);
+    border-color: rgba(28, 28, 28, 0.2);
+    color: #1C1C1C;
+}
+.folder-assign-btn:active,
+.folder-assign-btn.active {
+    background: rgba(28, 28, 28, 0.08);
+    border-color: rgba(28, 28, 28, 0.3);
+    color: #1C1C1C;
+}
+.folder-assign-btn.assigned {
+    color: #1C1C1C;
+    font-weight: 500;
+    border-color: rgba(28, 28, 28, 0.18);
+    background: rgba(28, 28, 28, 0.03);
+}
+.folder-assign-btn.assigned:hover {
+    background: rgba(28, 28, 28, 0.07);
+}
+
+/* Card view: overlay tag on the card */
+project-button .folder-assign-btn {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    z-index: 5;
+}
+
+/* --- Folder Assignment Dropdown Menu --- */
+.folder-assign-menu {
+    position: absolute;
+    z-index: 10000;
+    background: #FAF8F5;
+    border: 1px solid rgba(28, 28, 28, 0.08);
+    border-radius: 4px 16px 4px 16px;
+    box-shadow:
+        0 2px 4px rgba(28, 28, 28, 0.02),
+        0 8px 32px rgba(28, 28, 28, 0.08);
+    min-width: 160px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+.folder-assign-option {
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #4A4A4A;
+    letter-spacing: 0.01em;
+    transition: all 0.2s ease;
+}
+.folder-assign-option:hover {
+    background-color: rgba(28, 28, 28, 0.03);
+    color: #1C1C1C;
+}
+.folder-assign-option.selected {
+    background-color: rgba(28, 28, 28, 0.05);
+    color: #1C1C1C;
+    font-weight: 500;
+}
