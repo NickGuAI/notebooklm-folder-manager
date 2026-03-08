@@ -442,7 +442,7 @@ function showFolderAssignMenu(el, event) {
         option.className = 'folder-assign-option';
         option.textContent = folderName;
         if (folderName === currentFolder) option.classList.add('selected');
-        option.addEventListener('click', (e) => {
+        option.addEventListener('click', async (e) => {
             e.stopPropagation();
             const id = getNotebookId(el);
             if (!id) return;
@@ -452,7 +452,11 @@ function showFolderAssignMenu(el, event) {
             } else {
                 ASSIGNMENTS[id] = folderName;
             }
-            persistAssignments();
+            try {
+                await persistAssignments();
+            } catch (err) {
+                console.error('[NotebookLM Folder Manager] Failed to persist assignment:', err);
+            }
             menu.remove();
             triggerBtn.classList.remove('active');
             refreshView();
