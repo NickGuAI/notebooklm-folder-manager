@@ -538,9 +538,13 @@ function openFolderManager() {
     modal.innerHTML = `
         <h2>Manage Folders</h2>
         <div id="category-list-container"></div>
+        <div id="import-error-msg" class="import-error-msg" style="display:none"></div>
         <div class="modal-actions">
             <button id="add-new-category-btn">Add New Folder</button>
-            <div>
+            <div class="modal-actions-right">
+                <button id="import-folders-btn" title="Import folder configuration">↑ Import</button>
+                <button id="export-folders-btn" title="Export folder configuration">↓ Export</button>
+                <input type="file" id="import-file-input" accept=".json" style="display:none">
                 <button id="cancel-categories-btn">Cancel</button>
                 <button id="save-categories-btn">Save and Close</button>
             </div>
@@ -564,9 +568,97 @@ function openFolderManager() {
 
     modal.querySelector('#save-categories-btn').addEventListener('click', saveAndCloseFolderManager);
     modal.querySelector('#cancel-categories-btn').addEventListener('click', closeFolderManager);
+    modal.querySelector('#export-folders-btn').addEventListener('click', exportFolders);
+    modal.querySelector('#import-folders-btn').addEventListener('click', () => {
+        modal.querySelector('#import-file-input').click();
+    });
+    modal.querySelector('#import-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) importFolders(file, modal);
+        e.target.value = ''; // reset so same file can be re-selected
+    });
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeFolderManager();
     });
+}
+
+// --- Export / Import ---
+
+function exportFolders() {
+    const date = new Date().toISOString().slice(0, 10);
+    const data = {
+        version: 1,
+        folders: FOLDERS,
+        assignments: ASSIGNMENTS
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `notebooklm-folders-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importFolders(file, modal) {
+    const errorEl = modal.querySelector('#import-error-msg');
+    errorEl.style.display = 'none';
+    errorEl.textContent = '';
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        let data;
+        try {
+            data = JSON.parse(e.target.result);
+        } catch {
+            showImportError(errorEl, 'Invalid JSON file. Please select a valid export file.');
+            return;
+        }
+
+        // Validate schema
+        if (!data || typeof data !== 'object' || !Array.isArray(data.folders) || typeof data.assignments !== 'object') {
+            showImportError(errorEl, 'Invalid format. Expected { version, folders, assignments }.');
+            return;
+        }
+
+        const importedFolders = normaliseFolders(data.folders);
+        const importedAssignments = data.assignments || {};
+
+        // Ask Merge or Replace
+        const choice = window.confirm(
+            'How would you like to import?\n\n' +
+            'OK = Merge (add new folders, keep existing assignments)\n' +
+            'Cancel = Replace (overwrite all folders and assignments)'
+        );
+
+        if (choice) {
+            // Merge: add new folders not already present; add new assignments
+            const existingNames = new Set(folderNames());
+            importedFolders.forEach(f => {
+                if (!existingNames.has(f.name)) FOLDERS.push(f);
+            });
+            Object.assign(ASSIGNMENTS, importedAssignments);
+        } else {
+            // Replace: full overwrite
+            FOLDERS = importedFolders;
+            ASSIGNMENTS = importedAssignments;
+        }
+
+        // Re-render folder list in modal
+        const listContainer = modal.querySelector('#category-list-container');
+        listContainer.innerHTML = '';
+        FOLDERS.forEach(folder => listContainer.appendChild(createFolderEntry(folder)));
+    };
+    reader.onerror = () => showImportError(errorEl, 'Failed to read file.');
+    reader.readAsText(file);
+}
+
+function showImportError(el, msg) {
+    el.textContent = msg;
+    el.style.display = 'block';
 }
 
 /**
