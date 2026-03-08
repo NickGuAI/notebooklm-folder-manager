@@ -63,16 +63,36 @@ async function loadFolders() {
 
 /**
  * Extracts a stable notebook ID from the element's link href.
- * Falls back to title-based ID if no link found.
+ * Tries child links first, then ancestor links.
+ * Falls back to title + position-among-same-titles to avoid collisions.
  */
 function getNotebookId(el) {
+    // Try link within the element
     const link = el.querySelector('a[href*="/notebook/"]');
     if (link) {
         const match = link.getAttribute('href').match(/\/notebook\/([^/?#]+)/);
         if (match) return match[1];
     }
+    // Try ancestor link
+    const ancestorLink = el.closest('a[href*="/notebook/"]');
+    if (ancestorLink) {
+        const match = ancestorLink.getAttribute('href').match(/\/notebook\/([^/?#]+)/);
+        if (match) return match[1];
+    }
+    // Fallback: title + index-among-same-titles to avoid collisions for duplicate names
     const titleEl = el.querySelector('.project-button-title, .project-table-title');
-    if (titleEl) return 'title:' + titleEl.textContent.trim();
+    if (titleEl) {
+        const title = titleEl.textContent.trim();
+        const allEls = Array.from(document.querySelectorAll('project-button, tr.mat-mdc-row'));
+        const sameTitle = allEls.filter(e => {
+            const t = e.querySelector('.project-button-title, .project-table-title');
+            return t && t.textContent.trim() === title;
+        });
+        const idx = sameTitle.indexOf(el);
+        const id = 'title:' + title + (idx > 0 ? ':' + idx : '');
+        console.warn('[NotebookLM Folder Manager] Using fallback ID (no notebook link found):', id);
+        return id;
+    }
     return null;
 }
 
