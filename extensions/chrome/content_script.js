@@ -21,6 +21,8 @@ const FOLDER_COLORS = [
 let FOLDERS = [];
 let ASSIGNMENTS = {};
 let ACTIVE_FILTER = 'All';
+let SELECT_MODE = false;
+let SELECTED_IDS = new Set();
 
 // --- Helpers ---
 
@@ -266,6 +268,7 @@ async function createFilterUI(targetContainer) {
     actionsWrapper.className = 'filter-bar-actions';
     actionsWrapper.appendChild(createAddFolderButton());
     actionsWrapper.appendChild(createManagerButton());
+    actionsWrapper.appendChild(createSelectModeButton());
     filterContainer.appendChild(actionsWrapper);
 
     const featuredProjectsContainer = targetContainer.querySelector('.featured-projects-container');
@@ -310,6 +313,214 @@ function createManagerButton() {
     </svg>`;
     button.addEventListener('click', openFolderManager);
     return button;
+}
+
+function createSelectModeButton() {
+    const button = document.createElement('button');
+    button.id = 'select-mode-btn';
+    button.title = 'Select notebooks';
+    button.textContent = 'Select';
+    button.addEventListener('click', () => {
+        if (SELECT_MODE) {
+            exitSelectMode();
+        } else {
+            enterSelectMode();
+        }
+    });
+    return button;
+}
+
+// --- Bulk Select Mode ---
+
+function enterSelectMode() {
+    SELECT_MODE = true;
+    SELECTED_IDS.clear();
+    const filterContainer = document.querySelector('.category-filter-container');
+    if (filterContainer) filterContainer.classList.add('select-mode-active');
+    renderBulkToolbar();
+    document.querySelectorAll('project-button, tr.mat-mdc-row').forEach(el => {
+        injectSelectCheckbox(el);
+    });
+    document.querySelectorAll('table.mdc-data-table__table thead tr').forEach(hr => {
+        injectSelectAllHeader(hr);
+    });
+}
+
+function exitSelectMode() {
+    SELECT_MODE = false;
+    SELECTED_IDS.clear();
+    const filterContainer = document.querySelector('.category-filter-container');
+    if (filterContainer) filterContainer.classList.remove('select-mode-active');
+    const toolbar = document.getElementById('bulk-action-toolbar');
+    if (toolbar) toolbar.remove();
+    document.querySelectorAll('.select-checkbox-cell, .select-checkbox-card, .select-all-header').forEach(el => el.remove());
+    document.querySelectorAll('[data-select-checked]').forEach(el => el.removeAttribute('data-select-checked'));
+}
+
+function renderBulkToolbar() {
+    const existing = document.getElementById('bulk-action-toolbar');
+    if (existing) existing.remove();
+
+    const toolbar = document.createElement('div');
+    toolbar.id = 'bulk-action-toolbar';
+    toolbar.innerHTML = `
+        <span id="bulk-selected-count">${SELECTED_IDS.size} selected</span>
+        <button id="bulk-move-btn">Move to ▾</button>
+        <button id="bulk-cancel-btn">Cancel</button>
+    `;
+
+    const filterContainer = document.querySelector('.category-filter-container');
+    if (filterContainer) {
+        filterContainer.parentNode.insertBefore(toolbar, filterContainer.nextSibling);
+    }
+
+    toolbar.querySelector('#bulk-move-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showBulkFolderPicker(e.target);
+    });
+    toolbar.querySelector('#bulk-cancel-btn').addEventListener('click', exitSelectMode);
+}
+
+function updateBulkToolbar() {
+    const countEl = document.getElementById('bulk-selected-count');
+    if (countEl) countEl.textContent = `${SELECTED_IDS.size} selected`;
+}
+
+function showBulkFolderPicker(triggerEl) {
+    const existing = document.querySelector('.bulk-folder-menu');
+    if (existing) { existing.remove(); return; }
+
+    const menu = document.createElement('div');
+    menu.className = 'bulk-folder-menu folder-assign-menu';
+
+    [...FOLDERS, { name: 'Uncategorized', color: undefined }].forEach(f => {
+        const name = f.name;
+        const color = f.color || null;
+        const option = document.createElement('div');
+        option.className = 'folder-assign-option';
+        if (color) {
+            const dot = document.createElement('span');
+            dot.className = 'folder-color-dot';
+            dot.style.background = color;
+            option.appendChild(dot);
+        }
+        option.appendChild(document.createTextNode(name));
+        option.addEventListener('click', async () => {
+            menu.remove();
+            await applyBulkAssignment(name);
+        });
+        menu.appendChild(option);
+    });
+
+    document.body.appendChild(menu);
+    const rect = triggerEl.getBoundingClientRect();
+    menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    menu.style.left = (rect.left + window.scrollX) + 'px';
+
+    const close = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener('click', close, true);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', close, true), 0);
+}
+
+async function applyBulkAssignment(folderName) {
+    SELECTED_IDS.forEach(id => {
+        if (folderName === 'Uncategorized') {
+            delete ASSIGNMENTS[id];
+        } else {
+            ASSIGNMENTS[id] = folderName;
+        }
+    });
+    try {
+        await persistAssignments();
+    } catch (err) {
+        console.error('[NotebookLM Folder Manager] Failed to persist bulk assignment:', err);
+    }
+    exitSelectMode();
+    refreshView();
+}
+
+function injectSelectCheckbox(el) {
+    const id = getNotebookId(el);
+
+    if (el.tagName === 'TR') {
+        if (el.querySelector('.select-checkbox-cell')) return;
+        const td = document.createElement('td');
+        td.className = 'select-checkbox-cell mat-mdc-cell';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'select-cb';
+        if (id) {
+            cb.checked = SELECTED_IDS.has(id);
+            cb.addEventListener('change', () => {
+                if (cb.checked) { SELECTED_IDS.add(id); } else { SELECTED_IDS.delete(id); }
+                updateSelectAllHeader();
+                updateBulkToolbar();
+            });
+        } else {
+            cb.disabled = true;
+        }
+        td.appendChild(cb);
+        el.insertBefore(td, el.firstChild);
+    } else {
+        if (el.querySelector('.select-checkbox-card')) return;
+        const wrapper = document.createElement('label');
+        wrapper.className = 'select-checkbox-card';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'select-cb';
+        if (id) {
+            cb.checked = SELECTED_IDS.has(id);
+            cb.addEventListener('change', (e) => {
+                e.stopPropagation();
+                if (cb.checked) { SELECTED_IDS.add(id); } else { SELECTED_IDS.delete(id); }
+                updateBulkToolbar();
+            });
+        } else {
+            cb.disabled = true;
+        }
+        wrapper.appendChild(cb);
+        el.style.position = 'relative';
+        el.insertBefore(wrapper, el.firstChild);
+    }
+}
+
+function injectSelectAllHeader(headerRow) {
+    if (headerRow.querySelector('.select-all-header')) return;
+    const th = document.createElement('th');
+    th.className = 'select-all-header mat-mdc-header-cell';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'select-all-cb';
+    cb.title = 'Select all visible';
+    cb.addEventListener('change', () => {
+        const visible = Array.from(document.querySelectorAll('tr.mat-mdc-row[data-filtered="visible"]'));
+        visible.forEach(row => {
+            const id = getNotebookId(row);
+            if (!id) return;
+            const rowCb = row.querySelector('.select-cb');
+            if (rowCb) rowCb.checked = cb.checked;
+            if (cb.checked) { SELECTED_IDS.add(id); } else { SELECTED_IDS.delete(id); }
+        });
+        updateBulkToolbar();
+    });
+    th.appendChild(cb);
+    headerRow.insertBefore(th, headerRow.firstChild);
+}
+
+function updateSelectAllHeader() {
+    const cb = document.getElementById('select-all-cb');
+    if (!cb) return;
+    const visible = Array.from(document.querySelectorAll('tr.mat-mdc-row[data-filtered="visible"]'));
+    const allChecked = visible.length > 0 && visible.every(row => {
+        const id = getNotebookId(row);
+        return id && SELECTED_IDS.has(id);
+    });
+    cb.checked = allChecked;
+    cb.indeterminate = !allChecked && SELECTED_IDS.size > 0;
 }
 
 // --- Folder Manager Modal ---
@@ -477,9 +688,11 @@ function injectAssignButtons() {
     // Re-inject column header if table re-rendered
     document.querySelectorAll('table.mdc-data-table__table thead tr').forEach(hr => {
         injectFolderColumnHeader(hr);
+        if (SELECT_MODE) injectSelectAllHeader(hr);
     });
     document.querySelectorAll('project-button, tr.mat-mdc-row').forEach(el => {
         injectAssignButton(el);
+        if (SELECT_MODE) injectSelectCheckbox(el);
     });
 }
 
