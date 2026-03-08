@@ -49,6 +49,16 @@ Click the folder tag on any notebook row to open a dropdown and pick a folder. T
 
 Click any folder tab in the filter bar to show only notebooks in that folder. Click **All** to reset.
 
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Alt+F` | Open / close the Folder Manager modal |
+| `Alt+1` … `Alt+9` | Switch to filter tab 1–9 (`All` = `Alt+1`, first folder = `Alt+2`, …) |
+| `Escape` | Close the Folder Manager modal |
+
+Shortcuts are suppressed when focus is inside a text input.
+
 ---
 
 ## FAQ
