@@ -43,6 +43,7 @@ function normaliseFolders(raw) {
 
 async function init() {
     await loadFolders();
+    registerKeyboardShortcuts();
 
     document.arrive(
         '.all-projects-container',
@@ -957,6 +958,49 @@ function refreshView() {
     const activeFilter = activeBtn ? activeBtn.getAttribute('data-category') : 'All';
     filterProjects(activeFilter);
     injectAssignButtons();
+}
+
+// --- Keyboard Shortcuts ---
+
+/**
+ * Registers keyboard shortcuts for folder navigation and manager.
+ *
+ * Shortcut table:
+ *   Alt+F        Open / close the Folder Manager modal
+ *   Alt+1–Alt+9  Switch to filter tab 1–9 (All = Alt+1, first folder = Alt+2, …)
+ *   Escape       Close folder manager modal
+ *
+ * Shortcuts are suppressed when focus is inside a text input or textarea.
+ */
+function registerKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Suppress when typing in an input
+        const tag = document.activeElement && document.activeElement.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable) return;
+
+        if (e.key === 'Escape') {
+            closeFolderManager();
+            return;
+        }
+
+        if (e.altKey && e.key === 'f') {
+            e.preventDefault();
+            const existing = document.getElementById('category-manager-overlay');
+            if (existing) {
+                closeFolderManager();
+            } else {
+                openFolderManager();
+            }
+            return;
+        }
+
+        if (e.altKey && e.key >= '1' && e.key <= '9') {
+            e.preventDefault();
+            const idx = parseInt(e.key, 10) - 1; // 0-based
+            const buttons = Array.from(document.querySelectorAll('.category-filter-button'));
+            if (buttons[idx]) buttons[idx].click();
+        }
+    });
 }
 
 init();
