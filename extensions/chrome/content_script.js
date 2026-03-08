@@ -108,10 +108,13 @@ function getNotebookId(el) {
 
 /**
  * Returns the folder a notebook is assigned to, or "Uncategorized".
+ * Treats assignments pointing to deleted folders as "Uncategorized".
  */
 function getNotebookFolder(el) {
     const id = getNotebookId(el);
-    if (id && ASSIGNMENTS[id]) return ASSIGNMENTS[id];
+    if (id && ASSIGNMENTS[id] && FOLDERS.includes(ASSIGNMENTS[id])) {
+        return ASSIGNMENTS[id];
+    }
     return 'Uncategorized';
 }
 
