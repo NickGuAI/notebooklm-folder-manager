@@ -6,6 +6,7 @@ const ACTIVE_FILTER_KEY = 'notebooklm_active_filter';
 const OLD_CATEGORIES_KEY = 'notebooklm_user_categories';
 let FOLDERS = [];
 let ASSIGNMENTS = {};
+let ACTIVE_FILTER = 'All';
 
 async function init() {
     await loadFolders();
@@ -66,9 +67,13 @@ async function loadFolders() {
         return;
     }
 
-    const result = await chrome.storage.local.get([FOLDERS_KEY, ASSIGNMENTS_KEY]);
+    const result = await chrome.storage.local.get([FOLDERS_KEY, ASSIGNMENTS_KEY, ACTIVE_FILTER_KEY]);
     FOLDERS = result[FOLDERS_KEY] || [];
     ASSIGNMENTS = result[ASSIGNMENTS_KEY] || {};
+    const storedFilter = result[ACTIVE_FILTER_KEY] || 'All';
+    ACTIVE_FILTER = (storedFilter === 'All' || storedFilter === 'Uncategorized' || FOLDERS.includes(storedFilter))
+        ? storedFilter
+        : 'All';
 }
 
 /**
@@ -149,6 +154,7 @@ function updateButtonCounts() {
  * Filters notebooks based on the selected folder.
  */
 async function filterProjects(selectedCategory) {
+    ACTIVE_FILTER = selectedCategory;
     const projectButtons = document.querySelectorAll('project-button, tr.mat-mdc-row');
 
     projectButtons.forEach(proj => {
@@ -205,13 +211,8 @@ async function createFilterUI(targetContainer) {
     }
 
     updateButtonCounts();
-
-    const result = await chrome.storage.local.get(ACTIVE_FILTER_KEY);
-    let lastFilter = result[ACTIVE_FILTER_KEY] || 'All';
-    if (lastFilter !== 'All' && lastFilter !== 'Uncategorized' && !FOLDERS.includes(lastFilter)) {
-        lastFilter = 'All';
-    }
-    filterProjects(lastFilter);
+    // ACTIVE_FILTER was pre-loaded in loadFolders() — no async storage read needed here
+    filterProjects(ACTIVE_FILTER);
 }
 
 function createAddFolderButton() {
@@ -395,6 +396,12 @@ function injectAssignButtons() {
 function injectAssignButton(el) {
     const folder = getNotebookFolder(el);
     const isAssigned = folder !== 'Uncategorized';
+    // Apply filter immediately to avoid flash of unfiltered content
+    if (ACTIVE_FILTER === 'All' || folder === ACTIVE_FILTER) {
+        el.setAttribute('data-filtered', 'visible');
+    } else {
+        el.setAttribute('data-filtered', 'hidden');
+    }
 
     if (el.tagName === 'TR') {
         // Table row: inject a dedicated <td> cell
