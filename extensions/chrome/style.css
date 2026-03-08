@@ -151,7 +151,52 @@ tr.mat-mdc-row[data-filtered="hidden"] {
     grid-template-columns: 1fr 36px;
     gap: 12px;
     margin-bottom: 16px;
+    align-items: start;
+}
+
+.folder-entry-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* --- Color picker row in folder entry --- */
+.color-picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.color-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
+}
+.color-swatch:hover {
+    transform: scale(1.15);
+    border-color: rgba(28, 28, 28, 0.3);
+}
+.color-swatch.selected {
+    border-color: #1C1C1C;
+    box-shadow: 0 0 0 2px #FAF8F5, 0 0 0 4px #1C1C1C;
+}
+.color-swatch-none {
+    background: #FAF8F5 !important;
+    border-color: rgba(28, 28, 28, 0.12) !important;
+    font-size: 10px;
+    color: #8B8B8B;
+    display: flex;
     align-items: center;
+    justify-content: center;
+}
+.color-swatch-none.selected {
+    border-color: #1C1C1C !important;
 }
 
 .folder-entry input {
@@ -316,6 +361,17 @@ project-button .folder-assign-btn {
     z-index: 5;
 }
 
+/* --- Folder color dot (filter tabs, assign tags, dropdown) --- */
+.folder-color-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
 /* --- Folder Assignment Dropdown Menu --- */
 .folder-assign-menu {
     position: absolute;
@@ -332,6 +388,8 @@ project-button .folder-assign-btn {
     padding: 4px 0;
 }
 .folder-assign-option {
+    display: flex;
+    align-items: center;
     padding: 10px 18px;
     cursor: pointer;
     font-size: 0.9em;
