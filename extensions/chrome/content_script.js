@@ -45,14 +45,24 @@ async function loadFolders() {
         const migratedFolders = Object.keys(oldCategories).filter(
             name => name !== 'All' && name !== 'Other'
         );
+        // Preserve any existing assignment data rather than always writing {}
+        const existingResult = await chrome.storage.local.get(ASSIGNMENTS_KEY);
+        const existingAssignments = existingResult[ASSIGNMENTS_KEY] || {};
         await chrome.storage.local.set({
             [FOLDERS_KEY]: migratedFolders,
-            [ASSIGNMENTS_KEY]: {}
+            [ASSIGNMENTS_KEY]: existingAssignments
         });
         await chrome.storage.local.remove(OLD_CATEGORIES_KEY);
         FOLDERS = migratedFolders;
-        ASSIGNMENTS = {};
-        console.log('Migrated old categories to folders:', FOLDERS);
+        ASSIGNMENTS = existingAssignments;
+        if (Object.keys(existingAssignments).length === 0) {
+            console.info(
+                '[NotebookLM Folder Manager] v2→v3 migration: folder names preserved. ' +
+                'Notebook assignments could not be auto-migrated from the keyword-based format — ' +
+                'please reassign notebooks to folders.'
+            );
+        }
+        console.log('[NotebookLM Folder Manager] Migrated old categories to folders:', FOLDERS);
         return;
     }
 
