@@ -556,6 +556,7 @@ function openFolderManager() {
     document.body.appendChild(overlay);
 
     const listContainer = modal.querySelector('#category-list-container');
+    enableFolderListDragDrop(listContainer);
 
     FOLDERS.forEach(folder => {
         listContainer.appendChild(createFolderEntry(folder));
@@ -664,11 +665,13 @@ function showImportError(el, msg) {
 
 /**
  * Creates a folder entry row in the manager modal.
+ * Includes a drag handle for reordering.
  * @param {{ name: string, color?: string }} folder
  */
 function createFolderEntry(folder) {
     const entry = document.createElement('div');
     entry.className = 'folder-entry';
+    entry.draggable = true;
 
     // Color swatch picker
     const colorPickerHtml = FOLDER_COLORS.map(c =>
@@ -679,6 +682,7 @@ function createFolderEntry(folder) {
         data-color="" title="No color">✕</button>`;
 
     entry.innerHTML = `
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
         <div class="folder-entry-main">
             <label>
                 Folder Name
@@ -706,7 +710,69 @@ function createFolderEntry(folder) {
         });
     });
 
+    // Drag: only allow drag when grabbing the handle
+    const handle = entry.querySelector('.drag-handle');
+    handle.addEventListener('mousedown', () => { entry.draggable = true; });
+    entry.addEventListener('dragstart', () => { entry.classList.add('dragging'); });
+    entry.addEventListener('dragend', () => {
+        entry.classList.remove('dragging');
+        entry.draggable = true;
+    });
+
     return entry;
+}
+
+/**
+ * Attaches drag-and-drop reorder listeners to the folder list container.
+ */
+function enableFolderListDragDrop(listContainer) {
+    let dragEl = null;
+
+    listContainer.addEventListener('dragstart', (e) => {
+        dragEl = e.target.closest('.folder-entry');
+        if (dragEl) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', ''); // required for Firefox
+        }
+    });
+
+    listContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const target = e.target.closest('.folder-entry');
+        if (!target || target === dragEl) return;
+
+        // Clear previous drop-target highlights
+        listContainer.querySelectorAll('.folder-entry').forEach(el => el.classList.remove('drag-over'));
+        target.classList.add('drag-over');
+    });
+
+    listContainer.addEventListener('dragleave', (e) => {
+        const target = e.target.closest('.folder-entry');
+        if (target) target.classList.remove('drag-over');
+    });
+
+    listContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const target = e.target.closest('.folder-entry');
+        listContainer.querySelectorAll('.folder-entry').forEach(el => el.classList.remove('drag-over'));
+        if (!target || target === dragEl || !dragEl) return;
+
+        // Insert dragEl before or after target depending on pointer position
+        const rect = target.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        if (e.clientY < midY) {
+            listContainer.insertBefore(dragEl, target);
+        } else {
+            listContainer.insertBefore(dragEl, target.nextSibling);
+        }
+        dragEl = null;
+    });
+
+    listContainer.addEventListener('dragend', () => {
+        listContainer.querySelectorAll('.folder-entry').forEach(el => el.classList.remove('drag-over'));
+        dragEl = null;
+    });
 }
 
 function closeFolderManager() {
